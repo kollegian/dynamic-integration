@@ -1,25 +1,41 @@
-import logo from './logo.svg';
-import './App.css';
+import { DynamicContextProvider } from "@dynamic-labs/sdk-react-core";
+import { EthereumWalletConnectors } from "@dynamic-labs/ethereum";
+import { DynamicWagmiConnector } from "@dynamic-labs/wagmi-connector";
+import { createConfig, WagmiProvider } from "wagmi";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { http } from "viem";
+import { sei, seiTestnet} from "viem/chains";
+import Main from "./Main";
+import '@sei-js/sei-account/eip6963';
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
-}
+
+const config = createConfig({
+    chains: [sei, seiTestnet],
+    multiInjectedProviderDiscovery: false,
+    transports: {
+        [sei.id]: http(),
+        [seiTestnet.id]: http(),
+    },
+});
+
+const queryClient = new QueryClient();
+
+const App = () => (
+    <DynamicContextProvider
+        theme="auto"
+        settings={{
+            environmentId: "f981dab3-486c-4fd9-8e35-0a3cc32f263d",
+            walletConnectors: [EthereumWalletConnectors],
+        }}
+    >
+        <WagmiProvider config={config}>
+            <QueryClientProvider client={queryClient}>
+                <DynamicWagmiConnector>
+                    <Main />
+                </DynamicWagmiConnector>
+            </QueryClientProvider>
+        </WagmiProvider>
+    </DynamicContextProvider>
+);
 
 export default App;
