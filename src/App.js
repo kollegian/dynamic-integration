@@ -24,7 +24,7 @@ const App = () => (
     <DynamicContextProvider
         theme="auto"
         settings={{
-            environmentId: "f981dab3-486c-4fd9-8e35-0a3cc32f263d",
+            environmentId: "",
             walletConnectors: [EthereumWalletConnectors],
         }}
     >

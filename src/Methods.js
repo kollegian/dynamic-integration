@@ -13,7 +13,6 @@ export default function DynamicMethods({ isDarkMode }) {
     const [count, setCount] = useState(null);
     const [isMinting, setIsMinting] = useState(false);
 
-    // --- Contract Constants ---
     const WASMD_PRECOMPILE_ADDRESS = "0x3C56d833e9EC105F1738986b00239186caAe0872";
     const STAKE_CONTRACT_ADDRESS = "0x0000000000000000000000000000000000001005";
     const VALIDATOR_ADDRESS = "seivaloper1sq7x0r2mf3gvwr2l9amtlye0yd3c6dqa4th95v";
@@ -74,23 +73,6 @@ export default function DynamicMethods({ isDarkMode }) {
             setResult(`Current count is: ${balanceStr}`);
         } catch (error) {
             console.error("Error fetching count:", error);
-            try {
-                console.log("Trying alternative method to read contract...");
-                const resultAlt = await primaryWallet.request({
-                    method: 'eth_call',
-                    params: [{
-                        to: WASMD_PRECOMPILE_ADDRESS,
-                        data: `0x70a08231000000000000000000000000${primaryWallet.address.slice(2).padStart(64, '0')}`
-                    }, 'latest']
-                });
-                const balance = parseInt(resultAlt, 16);
-                console.log("Alternative method balance:", balance);
-                setCount(balance.toString());
-                setResult(`Current count is: ${balance}`);
-            } catch (alternativeError) {
-                console.error("Alternative method also failed:", alternativeError);
-                setResult(`Error fetching count: ${error.message}\nAlternative method error: ${alternativeError.message}`);
-            }
         }
     }
 
@@ -114,7 +96,6 @@ export default function DynamicMethods({ isDarkMode }) {
 
             setResult(`Mint transaction submitted: ${txHash}\nMinting ${DEFAULT_MINT_AMOUNT} tokens...`);
 
-            // Wait for the transaction to be mined
             const publicClient = await primaryWallet.getPublicClient();
             await publicClient.waitForTransactionReceipt({ hash: txHash });
             setResult(`Successfully minted ${DEFAULT_MINT_AMOUNT} tokens! Transaction: ${txHash}`);
@@ -192,32 +173,9 @@ export default function DynamicMethods({ isDarkMode }) {
     async function switchToSeiTestnet() {
         if (!primaryWallet || !isEthereumWallet(primaryWallet)) return;
         try {
-            console.log(primaryWallet.connector.supportsNetworkSwitching());
-            console.log("Switching to Sei Testnet:", seiTestnet.id);
             await primaryWallet.switchNetwork(seiTestnet.id);
             setResult(`Successfully switched to Sei Testnet (${seiTestnet.name})`);
         } catch (error) {
-            if (error.code === 4902) {
-                try {
-                    await primaryWallet.request({
-                        method: 'wallet_addEthereumChain',
-                        params: [{
-                            chainId: seiTestnet.id,
-                            chainName: seiTestnet.name,
-                            nativeCurrency: seiTestnet.nativeCurrency,
-                            rpcUrls: seiTestnet.rpcUrls,
-                            blockExplorerUrls: seiTestnet.blockExplorerUrls,
-                        }],
-                    });
-                    setResult(`Added and switched to Sei Testnet (${seiTestnet.name})`);
-                } catch (addError) {
-                    console.error("Error adding Sei Testnet:", addError);
-                    setResult(`Error adding Sei Testnet: ${addError.message}`);
-                }
-            } else {
-                console.error("Error switching to Sei Testnet:", error);
-                setResult(`Error switching to Sei Testnet: ${error.message}`);
-            }
         }
     }
 
@@ -232,8 +190,6 @@ export default function DynamicMethods({ isDarkMode }) {
                 throw new Error("Could not get wallet client from wallet");
             }
 
-            // Call the delegate function on the staking contract.
-            // If the delegate function requires a value (because it's payable), you can add a "value" property here.
             const txHash = await walletClient.writeContract({
                 address: STAKE_CONTRACT_ADDRESS,
                 abi: stakeContractAbi,

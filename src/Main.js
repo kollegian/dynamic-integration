@@ -1,9 +1,10 @@
-import { DynamicWidget } from "@dynamic-labs/sdk-react-core";
+import { DynamicWidget, useDynamicContext, useTokenBalances } from "@dynamic-labs/sdk-react-core";
 import { useState, useEffect } from 'react';
 import DynamicMethods from './Methods.js';
 import './Main.css';
 
-const checkIsDarkSchemePreferred = () => window?.matchMedia?.('(prefers-color-scheme:dark)')?.matches ?? false;
+const checkIsDarkSchemePreferred = () =>
+    window?.matchMedia?.('(prefers-color-scheme:dark)')?.matches ?? false;
 
 const Main = () => {
     const [isDarkMode, setIsDarkMode] = useState(checkIsDarkSchemePreferred);
@@ -11,30 +12,74 @@ const Main = () => {
     useEffect(() => {
         const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
         const handleChange = () => setIsDarkMode(checkIsDarkSchemePreferred());
-
         darkModeMediaQuery.addEventListener('change', handleChange);
         return () => darkModeMediaQuery.removeEventListener('change', handleChange);
     }, []);
 
+    // Integrate token balance fetching directly here.
+    const { primaryWallet } = useDynamicContext();
+    const { tokenBalances, isLoading, isError, error } = useTokenBalances();
+
     return (
         <div className={`container ${isDarkMode ? 'dark' : 'light'}`}>
             <div className="header">
-                <img className="logo" src={isDarkMode ? "/logo-light.png" : "/logo-dark.png"} alt="dynamic" />
+                <img
+                    className="logo"
+                    src={isDarkMode ? "/logo-light.png" : "/logo-dark.png"}
+                    alt="dynamic"
+                />
                 <div className="header-buttons">
-                    <button className="docs-button" onClick={() => window.open('https://docs.dynamic.xyz', '_blank', 'noopener,noreferrer')}>Docs</button>
-                    <button className="get-started" onClick={() => window.open('https://app.dynamic.xyz', '_blank', 'noopener,noreferrer')}>Get started</button>
+                    <button
+                        className="docs-button"
+                        onClick={() =>
+                            window.open('https://docs.dynamic.xyz', '_blank', 'noopener,noreferrer')
+                        }
+                    >
+                        Docs
+                    </button>
+                    <button
+                        className="get-started"
+                        onClick={() =>
+                            window.open('https://app.dynamic.xyz', '_blank', 'noopener,noreferrer')
+                        }
+                    >
+                        Get started
+                    </button>
                 </div>
             </div>
             <div className="modal">
                 <DynamicWidget />
                 <DynamicMethods isDarkMode={isDarkMode} />
+                {/* Token Balances Section */}
+                <div className="balances">
+                    {!primaryWallet ? (
+                        <div>No wallet connected</div>
+                    ) : isLoading ? (
+                        <div>Loading token balances...</div>
+                    ) : isError ? (
+                        <div>Error: {error.message}</div>
+                    ) : (
+                        tokenBalances.map((token) => (
+                            <div key={token.address} className="token">
+                                <img src={token.logoURI} alt={token.symbol} />
+                                <div>{token.name}</div>
+                                <div>{token.symbol}</div>
+                                <div>{token.balance}</div>
+                            </div>
+                        ))
+                    )}
+                </div>
             </div>
             <div className="footer">
                 <div className="footer-text">Made with ❤️ by dynamic</div>
-                <img className="footer-image" src={isDarkMode ? "/image-dark.png" : "/image-light.png"} alt="dynamic" />
+                <img
+                    className="footer-image"
+                    src={isDarkMode ? "/image-dark.png" : "/image-light.png"}
+                    alt="dynamic"
+                />
             </div>
         </div>
     );
-}
+};
 
 export default Main;
